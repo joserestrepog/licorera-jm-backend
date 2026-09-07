@@ -1,9 +1,9 @@
 package com.licorerajm.backend.repository;
 
-import com.licorerajm.backend.entity.Category;
+import com.licorerajm.backend.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CategoryRepository extends JpaRepository<Category, Long> {
+public interface RoleRepository extends JpaRepository<Role, Long> {
 
     boolean existsByName(String name);
 }

@@ -3,6 +3,7 @@ package com.licorerajm.backend.service;
 import com.licorerajm.backend.dto.CategoryRequest;
 import com.licorerajm.backend.dto.CategoryResponse;
 import com.licorerajm.backend.entity.Category;
+import com.licorerajm.backend.exception.DuplicateResourceException;
 import com.licorerajm.backend.exception.ResourceNotFoundException;
 import com.licorerajm.backend.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
@@ -27,14 +28,20 @@ public class CategoryService {
 
     public CategoryResponse findById(Long id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("La categoría no fue encontrada"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("La categoría no fue encontrada"));
 
         return toResponse(category);
     }
 
     public CategoryResponse create(CategoryRequest request) {
-        Category category = new Category();
 
+        if (categoryRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException(
+                    "Ya existe una categoría con ese nombre");
+        }
+
+        Category category = new Category();
         category.setName(request.getName());
         category.setDescription(request.getDescription());
         category.setActive(true);
@@ -45,8 +52,17 @@ public class CategoryService {
     }
 
     public CategoryResponse update(Long id, CategoryRequest request) {
+
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("La categoría no fue encontrada"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("La categoría no fue encontrada"));
+
+        if (!category.getName().equals(request.getName())
+                && categoryRepository.existsByName(request.getName())) {
+
+            throw new DuplicateResourceException(
+                    "Ya existe una categoría con ese nombre");
+        }
 
         category.setName(request.getName());
         category.setDescription(request.getDescription());
@@ -56,13 +72,17 @@ public class CategoryService {
         return toResponse(updatedCategory);
     }
 
-    public void deactivate(Long id) {
+    public CategoryResponse deactivate(Long id) {
+
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("La categoría no fue encontrada"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("La categoría no fue encontrada"));
 
         category.setActive(false);
 
-        categoryRepository.save(category);
+        Category updatedCategory = categoryRepository.save(category);
+
+        return toResponse(updatedCategory);
     }
 
     private CategoryResponse toResponse(Category category) {
