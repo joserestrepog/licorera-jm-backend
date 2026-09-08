@@ -1,6 +1,9 @@
 package com.licorerajm.backend.service;
 
+import com.licorerajm.backend.dto.InventoryReportResponse;
 import com.licorerajm.backend.dto.SalesReportResponse;
+import com.licorerajm.backend.repository.InventoryStockProjection;
+import com.licorerajm.backend.repository.ProductRepository;
 import com.licorerajm.backend.repository.SaleRepository;
 import com.licorerajm.backend.repository.SalesByProductProjection;
 import com.licorerajm.backend.repository.SalesCostProfitProjection;
@@ -15,9 +18,14 @@ import java.util.List;
 public class ReportService {
 
     private final SaleRepository saleRepository;
+    private final ProductRepository productRepository;
 
-    public ReportService(SaleRepository saleRepository) {
+    public ReportService(
+            SaleRepository saleRepository,
+            ProductRepository productRepository
+    ) {
         this.saleRepository = saleRepository;
+        this.productRepository = productRepository;
     }
 
     public SalesReportResponse getSalesSummary(
@@ -57,6 +65,30 @@ public class ReportService {
         LocalDateTime end = to.plusDays(1).atStartOfDay();
 
         return saleRepository.findSalesByProduct(start, end);
+    }
+
+    public List<InventoryReportResponse> getInventoryStock() {
+
+        return productRepository.findInventoryStock()
+                .stream()
+                .map(this::mapInventoryStock)
+                .toList();
+    }
+
+    private InventoryReportResponse mapInventoryStock(
+            InventoryStockProjection projection
+    ) {
+
+        return new InventoryReportResponse(
+                projection.getProductId(),
+                projection.getProductName(),
+                projection.getBarcode(),
+                projection.getCategoryName(),
+                projection.getCurrentStock(),
+                projection.getMinimumStock(),
+                projection.getPurchasePrice(),
+                projection.getStockValue()
+        );
     }
 
     private void validateDateRange(

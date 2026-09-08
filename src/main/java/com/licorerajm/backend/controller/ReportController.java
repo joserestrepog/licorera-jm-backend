@@ -1,5 +1,6 @@
 package com.licorerajm.backend.controller;
 
+import com.licorerajm.backend.dto.InventoryReportResponse;
 import com.licorerajm.backend.dto.SalesReportResponse;
 import com.licorerajm.backend.repository.SalesByProductProjection;
 import com.licorerajm.backend.service.ReportService;
@@ -46,5 +47,10 @@ public class ReportController {
             LocalDate to
     ) {
         return reportService.getSalesByProduct(from, to);
+    }
+
+    @GetMapping("/inventory/stock")
+    public List<InventoryReportResponse> getInventoryStock() {
+        return reportService.getInventoryStock();
     }
 }
