@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/roles/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/reports/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers("/api/backups/**").hasRole("ADMINISTRADOR")
 
                         // Cualquier otra operación requiere autenticación
                         .anyRequest().authenticated()
