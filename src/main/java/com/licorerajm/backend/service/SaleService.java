@@ -1,5 +1,6 @@
 package com.licorerajm.backend.service;
 
+import com.licorerajm.backend.dto.CurrentUserResponse;
 import com.licorerajm.backend.dto.SaleCancelRequest;
 import com.licorerajm.backend.dto.SaleItemRequest;
 import com.licorerajm.backend.dto.SaleRequest;
@@ -37,6 +38,7 @@ public class SaleService {
     private final UserRepository userRepository;
     private final InventoryLotRepository inventoryLotRepository;
 
+    private final CurrentUserService currentUserService;
     private final SaleNumberRepository saleNumberRepository;
 
     public SaleService(
@@ -49,7 +51,8 @@ public class SaleService {
             CashRegisterRepository cashRegisterRepository,
             UserRepository userRepository,
             InventoryLotRepository inventoryLotRepository,
-            SaleNumberRepository saleNumberRepository
+            SaleNumberRepository saleNumberRepository,
+            CurrentUserService currentUserService
     ) {
         this.saleRepository = saleRepository;
         this.saleDetailRepository = saleDetailRepository;
@@ -61,14 +64,17 @@ public class SaleService {
         this.userRepository = userRepository;
         this.inventoryLotRepository = inventoryLotRepository;
         this.saleNumberRepository = saleNumberRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
     public SaleResponse createSale(SaleRequest request) {
 
-        User user = userRepository.findById(request.getUserId())
+        CurrentUserResponse currentUser = currentUserService.getCurrentUser();
+
+        User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("El usuario no fue encontrado"));
+                        new ResourceNotFoundException("Usuario no encontrado"));
 
         CashRegister cashRegister = cashRegisterRepository.findWithLockById(request.getCashRegisterId())
                 .orElseThrow(() -> new ResourceNotFoundException("La caja no fue encontrada"));

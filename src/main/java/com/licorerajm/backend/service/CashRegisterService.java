@@ -3,6 +3,7 @@ package com.licorerajm.backend.service;
 import com.licorerajm.backend.dto.CashRegisterCloseRequest;
 import com.licorerajm.backend.dto.CashRegisterResponse;
 import com.licorerajm.backend.dto.CashRegisterRequest;
+import com.licorerajm.backend.dto.CurrentUserResponse;
 import com.licorerajm.backend.entity.CashRegister;
 import com.licorerajm.backend.entity.User;
 import com.licorerajm.backend.exception.DuplicateResourceException;
@@ -20,13 +21,15 @@ public class CashRegisterService {
 
     private final CashRegisterRepository cashRegisterRepository;
     private final UserRepository userRepository;
-
+    private final CurrentUserService currentUserService;
     public CashRegisterService(
             CashRegisterRepository cashRegisterRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            CurrentUserService currentUserService) {
 
         this.cashRegisterRepository = cashRegisterRepository;
         this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     public List<CashRegisterResponse> findAll() {
@@ -45,11 +48,14 @@ public class CashRegisterService {
 
     public CashRegisterResponse openCashRegister(CashRegisterRequest request) {
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("El usuario no fue encontrado"));
+        CurrentUserResponse currentUser = currentUserService.getCurrentUser();
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Usuario no encontrado"));
 
         if (cashRegisterRepository.existsByUserIdAndStatus(
-                request.getUserId(), "OPEN")) {
+                user.getId(), "OPEN")) {
 
             throw new DuplicateResourceException(
                     "El usuario ya tiene una caja abierta");

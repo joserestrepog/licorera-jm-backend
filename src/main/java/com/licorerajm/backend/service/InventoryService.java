@@ -1,5 +1,6 @@
 package com.licorerajm.backend.service;
 
+import com.licorerajm.backend.dto.CurrentUserResponse;
 import com.licorerajm.backend.dto.InventoryEntryRequest;
 import com.licorerajm.backend.dto.InventoryEntryResponse;
 import com.licorerajm.backend.entity.InventoryEntry;
@@ -23,17 +24,20 @@ public class InventoryService {
     private final InventoryLotRepository inventoryLotRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public InventoryService(
             InventoryEntryRepository inventoryEntryRepository,
             InventoryLotRepository inventoryLotRepository,
             ProductRepository productRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            CurrentUserService currentUserService
     ) {
         this.inventoryEntryRepository = inventoryEntryRepository;
         this.inventoryLotRepository = inventoryLotRepository;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
@@ -44,10 +48,11 @@ public class InventoryService {
                         new ResourceNotFoundException(
                                 "El producto no fue encontrado"));
 
-        User user = userRepository.findById(request.getUserId())
+        CurrentUserResponse currentUser = currentUserService.getCurrentUser();
+
+        User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "El usuario no fue encontrado"));
+                        new ResourceNotFoundException("Usuario no encontrado"));
 
         InventoryEntry entry = new InventoryEntry();
         entry.setProduct(product);

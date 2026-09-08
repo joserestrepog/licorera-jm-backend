@@ -1,22 +1,19 @@
 package com.licorerajm.backend.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.DecimalMin;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public class SaleRequest {
 
-    @NotNull(message = "El usuario es obligatorio")
-    private Long userId;
-
     @NotNull(message = "La caja es obligatoria")
     private Long cashRegisterId;
 
-    @NotEmpty(message = "La venta debe contener al menos un producto")
+    @NotEmpty(message = "La venta debe tener al menos un producto")
     @Valid
     private List<SaleItemRequest> items;
 
@@ -24,17 +21,9 @@ public class SaleRequest {
     @DecimalMin(value = "0.00", message = "El descuento no puede ser negativo")
     private BigDecimal discount = BigDecimal.ZERO;
 
-    @NotEmpty(message = "La venta debe contener al menos un pago")
+    @NotEmpty(message = "La venta debe tener al menos un método de pago")
     @Valid
     private List<SalePaymentRequest> payments;
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
 
     public Long getCashRegisterId() {
         return cashRegisterId;

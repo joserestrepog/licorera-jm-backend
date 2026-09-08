@@ -8,6 +8,7 @@ import com.licorerajm.backend.exception.DuplicateResourceException;
 import com.licorerajm.backend.exception.ResourceNotFoundException;
 import com.licorerajm.backend.repository.RoleRepository;
 import com.licorerajm.backend.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +18,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(
             UserRepository userRepository,
-            RoleRepository roleRepository
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UserResponse> findAll() {
@@ -62,9 +66,9 @@ public class UserService {
         user.setLastName(request.getLastName());
         user.setUsername(request.getUsername());
 
-        // Temporalmente guardamos el valor recibido.
-        // Posteriormente implementaremos el hash de contraseña.
-        user.setPasswordHash(request.getPassword());
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
 
         user.setRole(role);
         user.setActive(true);
@@ -97,9 +101,9 @@ public class UserService {
         user.setLastName(request.getLastName());
         user.setUsername(request.getUsername());
 
-        // Temporalmente guardamos el valor recibido.
-        // Posteriormente implementaremos el hash de contraseña.
-        user.setPasswordHash(request.getPassword());
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
 
         user.setRole(role);
 

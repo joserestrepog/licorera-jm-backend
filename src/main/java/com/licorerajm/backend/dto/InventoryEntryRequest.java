@@ -3,6 +3,7 @@ package com.licorerajm.backend.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
@@ -19,13 +20,8 @@ public class InventoryEntryRequest {
     @DecimalMin(value = "0.00", message = "El precio de compra no puede ser negativo")
     private BigDecimal purchasePrice;
 
-    @NotNull(message = "El usuario es obligatorio")
-    private Long userId;
-
+    @Size(max = 255, message = "La observación no puede superar los 255 caracteres")
     private String notes;
-
-    public InventoryEntryRequest() {
-    }
 
     public Long getProductId() {
         return productId;
@@ -49,14 +45,6 @@ public class InventoryEntryRequest {
 
     public void setPurchasePrice(BigDecimal purchasePrice) {
         this.purchasePrice = purchasePrice;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public String getNotes() {
