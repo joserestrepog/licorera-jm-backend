@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class BackupService {
@@ -20,6 +22,7 @@ public class BackupService {
     private String databasePassword;
 
     private static final String DATABASE_NAME = "licorera_jm";
+
     @Value("${app.backup.directory}")
     private String backupDirectory;
 
@@ -66,5 +69,33 @@ public class BackupService {
         }
 
         return backupFile;
+    }
+
+    public List<Path> listBackups() throws IOException {
+
+        Path backupDirectoryPath = Paths.get(backupDirectory);
+
+        if (!Files.exists(backupDirectoryPath)) {
+            return List.of();
+        }
+
+        try (var files = Files.list(backupDirectoryPath)) {
+
+            return files
+                    .filter(Files::isRegularFile)
+                    .filter(path ->
+                            path.getFileName()
+                                    .toString()
+                                    .toLowerCase()
+                                    .endsWith(".backup")
+                    )
+                    .sorted(
+                            Comparator.comparing(
+                                    path -> path.getFileName().toString(),
+                                    Comparator.reverseOrder()
+                            )
+                    )
+                    .toList();
+        }
     }
 }

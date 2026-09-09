@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,6 +36,15 @@ public class BackupController {
                 "message", "Backup creado correctamente",
                 "fileName", backupFile.getFileName().toString()
         );
+    }
+
+    @GetMapping
+    public List<String> listBackups() throws IOException {
+
+        return backupService.listBackups()
+                .stream()
+                .map(path -> path.getFileName().toString())
+                .toList();
     }
 
     @PostMapping("/restore")
