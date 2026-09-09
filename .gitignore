@@ -23,3 +23,6 @@ Thumbs.db
 
 # Configuración local
 .env
+
+# Database backups
+backups/
