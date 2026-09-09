@@ -3,7 +3,7 @@ package com.licorerajm.backend.service;
 import com.licorerajm.backend.dto.LoginRequest;
 import com.licorerajm.backend.dto.LoginResponse;
 import com.licorerajm.backend.entity.User;
-import com.licorerajm.backend.exception.ResourceNotFoundException;
+import com.licorerajm.backend.exception.AuthenticationException;
 import com.licorerajm.backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class AuthService {
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
+                        new AuthenticationException(
                                 "Usuario o contraseña incorrectos"
                         ));
 
@@ -40,7 +40,7 @@ public class AuthService {
                 request.getPassword(),
                 user.getPasswordHash())) {
 
-            throw new IllegalArgumentException(
+            throw new AuthenticationException(
                     "Usuario o contraseña incorrectos"
             );
         }

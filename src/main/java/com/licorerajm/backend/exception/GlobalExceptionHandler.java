@@ -21,6 +21,15 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", exception.getMessage()));
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthentication(
+            AuthenticationException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", exception.getMessage()));
+    }
+
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateResource(
             DuplicateResourceException exception) {
