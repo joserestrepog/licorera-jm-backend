@@ -122,6 +122,20 @@ public class ProductService {
         return toResponse(updatedProduct);
     }
 
+    public ProductResponse activate(Long id) {
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "El producto no fue encontrado"));
+
+        product.setActive(true);
+
+        Product updatedProduct = productRepository.save(product);
+
+        return toResponse(updatedProduct);
+    }
+
     private ProductResponse toResponse(Product product) {
 
         return new ProductResponse(

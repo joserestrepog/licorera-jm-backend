@@ -57,4 +57,13 @@ public class UserController {
                 userService.deactivate(id)
         );
     }
+
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<UserResponse> activate(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                userService.activate(id)
+        );
+    }
 }

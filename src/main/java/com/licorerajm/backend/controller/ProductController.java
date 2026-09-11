@@ -46,7 +46,14 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ProductResponse deactivate(@PathVariable Long id) {
+    public ProductResponse deactivate(
+            @PathVariable Long id) {
         return productService.deactivate(id);
+    }
+
+    @PatchMapping("/{id}/activate")
+    public ProductResponse activate(
+            @PathVariable Long id) {
+        return productService.activate(id);
     }
 }

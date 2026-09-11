@@ -85,6 +85,19 @@ public class CategoryService {
         return toResponse(updatedCategory);
     }
 
+    public CategoryResponse activate(Long id) {
+
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("La categoría no fue encontrada"));
+
+        category.setActive(true);
+
+        Category updatedCategory = categoryRepository.save(category);
+
+        return toResponse(updatedCategory);
+    }
+
     private CategoryResponse toResponse(Category category) {
         return new CategoryResponse(
                 category.getId(),

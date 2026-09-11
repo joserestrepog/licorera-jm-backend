@@ -126,6 +126,20 @@ public class UserService {
         return toResponse(updatedUser);
     }
 
+    public UserResponse activate(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "El usuario no fue encontrado"));
+
+        user.setActive(true);
+
+        User updatedUser = userRepository.save(user);
+
+        return toResponse(updatedUser);
+    }
+
     private UserResponse toResponse(User user) {
 
         return new UserResponse(
