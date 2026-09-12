@@ -21,10 +21,19 @@ class BackupServiceTest {
                 "postgres"
         );
 
+        String databasePassword =
+                System.getenv("LICORERA_JM_DB_PASSWORD");
+
+        if (databasePassword == null || databasePassword.isBlank()) {
+            throw new IllegalStateException(
+                    "La variable de entorno LICORERA_JM_DB_PASSWORD no está configurada."
+            );
+        }
+
         ReflectionTestUtils.setField(
                 backupService,
                 "databasePassword",
-                "REDACTED"
+                databasePassword
         );
 
         ReflectionTestUtils.setField(
