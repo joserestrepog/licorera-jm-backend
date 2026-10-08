@@ -77,6 +77,10 @@ public class InventoryService {
                 product.getCurrentStock() + request.getQuantity()
         );
 
+        if (!product.getActive()) {
+            product.setActive(true);
+        }
+
         productRepository.save(product);
 
         return toResponse(savedEntry);
