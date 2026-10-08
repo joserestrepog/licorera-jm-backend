@@ -77,7 +77,7 @@ public class InventoryService {
                 product.getCurrentStock() + request.getQuantity()
         );
 
-        if (!product.getActive()) {
+        if (!product.getActive() && !product.getDeleted()) {
             product.setActive(true);
         }
 

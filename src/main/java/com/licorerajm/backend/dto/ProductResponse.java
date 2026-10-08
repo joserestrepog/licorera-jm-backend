@@ -16,6 +16,7 @@ public class ProductResponse {
     private Integer currentStock;
     private Integer minimumStock;
     private Boolean active;
+    private Boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -34,6 +35,7 @@ public class ProductResponse {
             Integer currentStock,
             Integer minimumStock,
             Boolean active,
+            Boolean deleted,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {
@@ -48,6 +50,7 @@ public class ProductResponse {
         this.currentStock = currentStock;
         this.minimumStock = minimumStock;
         this.active = active;
+        this.deleted = deleted;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -139,6 +142,10 @@ public class ProductResponse {
     public void setActive(Boolean active) {
         this.active = active;
     }
+
+    public Boolean getDeleted() { return deleted; }
+
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

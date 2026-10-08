@@ -7,8 +7,10 @@ import com.licorerajm.backend.entity.Product;
 import com.licorerajm.backend.exception.DuplicateResourceException;
 import com.licorerajm.backend.exception.ResourceNotFoundException;
 import com.licorerajm.backend.repository.CategoryRepository;
+import com.licorerajm.backend.repository.InventoryLotRepository;
 import com.licorerajm.backend.repository.ProductRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,13 +19,16 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final InventoryLotRepository inventoryLotRepository;
 
     public ProductService(
             ProductRepository productRepository,
-            CategoryRepository categoryRepository
+            CategoryRepository categoryRepository,
+            InventoryLotRepository inventoryLotRepository
     ) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.inventoryLotRepository = inventoryLotRepository;
     }
 
     public List<ProductResponse> findAll() {
@@ -70,6 +75,7 @@ public class ProductService {
 
         product.setMinimumStock(request.getMinimumStock());
         product.setActive(true);
+        product.setDeleted(false);
 
         Product savedProduct = productRepository.save(product);
 
@@ -115,6 +121,11 @@ public class ProductService {
                         new ResourceNotFoundException(
                                 "El producto no fue encontrado"));
 
+        if (product.getDeleted()) {
+            throw new ResourceNotFoundException(
+                    "El producto está eliminado y no puede ser desactivado");
+        }
+
         product.setActive(false);
 
         Product updatedProduct = productRepository.save(product);
@@ -122,12 +133,34 @@ public class ProductService {
         return toResponse(updatedProduct);
     }
 
+    public ProductResponse delete(Long id) {
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "El producto no fue encontrado"));
+
+        product.setDeleted(true);
+        product.setActive(false);
+
+        Product updatedProduct = productRepository.save(product);
+
+        return toResponse(updatedProduct);
+    }
+
+    @Transactional
     public ProductResponse activate(Long id) {
 
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "El producto no fue encontrado"));
+
+        if (product.getDeleted()) {
+            inventoryLotRepository.invalidateByProductId(product.getId());
+            product.setCurrentStock(0);
+            product.setDeleted(false);
+        }
 
         product.setActive(true);
 
@@ -150,6 +183,7 @@ public class ProductService {
                 product.getCurrentStock(),
                 product.getMinimumStock(),
                 product.getActive(),
+                product.getDeleted(),
                 product.getCreatedAt(),
                 product.getUpdatedAt()
         );

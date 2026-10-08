@@ -41,6 +41,9 @@ public class Product {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -63,6 +66,10 @@ public class Product {
 
         if (active == null) {
             active = true;
+        }
+
+        if (deleted == null) {
+            deleted = false;
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -176,4 +183,8 @@ public class Product {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public Boolean getDeleted() { return deleted; }
+
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
 }
