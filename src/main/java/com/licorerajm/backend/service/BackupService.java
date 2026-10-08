@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 
@@ -25,6 +27,9 @@ public class BackupService {
 
     @Value("${app.backup.directory}")
     private String backupDirectory;
+
+    @Value("${app.backup.retention-days}")
+    private long backupRetentionDays;
 
     private static final DateTimeFormatter FILE_DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
@@ -68,6 +73,8 @@ public class BackupService {
             );
         }
 
+        deleteExpiredBackups();
+
         return backupFile;
     }
 
@@ -96,6 +103,62 @@ public class BackupService {
                             )
                     )
                     .toList();
+        }
+    }
+
+    public void deleteExpiredBackups() throws IOException {
+
+        Path backupDirectoryPath = Paths.get(backupDirectory);
+
+        if (!Files.exists(backupDirectoryPath)) {
+            return;
+        }
+
+        Instant expirationLimit = Instant.now()
+                .minus(backupRetentionDays, ChronoUnit.DAYS);
+
+        try (var files = Files.list(backupDirectoryPath)) {
+
+            files
+                    .filter(Files::isRegularFile)
+                    .filter(path ->
+                            path.getFileName()
+                                    .toString()
+                                    .toLowerCase()
+                                    .endsWith(".backup")
+                    )
+                    .forEach(path -> {
+
+                        try {
+
+                            Instant lastModified = Files.getLastModifiedTime(path)
+                                    .toInstant();
+
+                            if (lastModified.isBefore(expirationLimit)) {
+
+                                Files.deleteIfExists(path);
+
+                            }
+
+                        } catch (IOException exception) {
+
+                            throw new BackupCleanupException(
+                                    "No fue posible eliminar el backup: "
+                                            + path.getFileName(),
+                                    exception
+                            );
+                        }
+                    });
+        }
+    }
+
+    private static class BackupCleanupException extends RuntimeException {
+
+        public BackupCleanupException(
+                String message,
+                Throwable cause
+        ) {
+            super(message, cause);
         }
     }
 }
