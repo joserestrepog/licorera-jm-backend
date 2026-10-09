@@ -2,6 +2,7 @@ package com.licorerajm.backend.controller;
 
 import com.licorerajm.backend.dto.InventoryReportResponse;
 import com.licorerajm.backend.dto.SalesReportResponse;
+import com.licorerajm.backend.repository.SalesByDayProjection;
 import com.licorerajm.backend.repository.SalesByProductProjection;
 import com.licorerajm.backend.service.ReportService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -52,5 +53,13 @@ public class ReportController {
     @GetMapping("/inventory/stock")
     public List<InventoryReportResponse> getInventoryStock() {
         return reportService.getInventoryStock();
+    }
+
+    @GetMapping("/sales/by-day")
+    public List<SalesByDayProjection> getSalesByDay(
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to
+    ) {
+        return reportService.getSalesByDay(from, to);
     }
 }

@@ -72,4 +72,33 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    @Query(value = """
+    SELECT
+        CAST(s.sale_date AS DATE) AS saleDate,
+        COUNT(s.id) AS saleCount,
+        COALESCE(SUM(s.subtotal), 0) AS subtotal,
+        COALESCE(SUM(s.discount), 0) AS discount,
+        COALESCE(SUM(s.total), 0) AS total,
+        COALESCE(SUM(costs.total_cost), 0) AS totalCost,
+        COALESCE(SUM(costs.profit), 0) AS profit
+    FROM sale s
+    LEFT JOIN (
+        SELECT
+            sd.sale_id,
+            SUM(sd.total_cost) AS total_cost,
+            SUM(sd.profit) AS profit
+        FROM sale_detail sd
+        GROUP BY sd.sale_id
+    ) costs ON costs.sale_id = s.id
+    WHERE s.status = 'COMPLETED'
+      AND s.sale_date >= :start
+      AND s.sale_date < :end
+    GROUP BY CAST(s.sale_date AS DATE)
+    ORDER BY CAST(s.sale_date AS DATE)
+    """, nativeQuery = true)
+    List<SalesByDayProjection> findSalesByDay(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

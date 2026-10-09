@@ -5,6 +5,7 @@ import com.licorerajm.backend.dto.SalesReportResponse;
 import com.licorerajm.backend.repository.InventoryStockProjection;
 import com.licorerajm.backend.repository.ProductRepository;
 import com.licorerajm.backend.repository.SaleRepository;
+import com.licorerajm.backend.repository.SalesByDayProjection;
 import com.licorerajm.backend.repository.SalesByProductProjection;
 import com.licorerajm.backend.repository.SalesCostProfitProjection;
 import com.licorerajm.backend.repository.SalesSummaryProjection;
@@ -65,6 +66,18 @@ public class ReportService {
         LocalDateTime end = to.plusDays(1).atStartOfDay();
 
         return saleRepository.findSalesByProduct(start, end);
+    }
+
+    public List<SalesByDayProjection> getSalesByDay(
+            LocalDate from,
+            LocalDate to
+    ) {
+        validateDateRange(from, to);
+
+        LocalDateTime start = from.atStartOfDay();
+        LocalDateTime end = to.plusDays(1).atStartOfDay();
+
+        return saleRepository.findSalesByDay(start, end);
     }
 
     public List<InventoryReportResponse> getInventoryStock() {
