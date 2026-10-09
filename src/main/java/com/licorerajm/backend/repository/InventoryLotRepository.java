@@ -20,10 +20,11 @@ public interface InventoryLotRepository extends JpaRepository<InventoryLot, Long
 
     @Modifying
     @Query("""
-            UPDATE InventoryLot l
-            SET l.active = false,
-                l.availableQuantity = 0
-            WHERE l.product.id = :productId
-            """)
+        UPDATE InventoryLot l
+        SET l.active = false,
+            l.availableQuantity = 0,
+            l.invalidatedAt = CURRENT_TIMESTAMP
+        WHERE l.product.id = :productId
+        """)
     void invalidateByProductId(@Param("productId") Long productId);
 }

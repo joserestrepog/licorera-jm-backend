@@ -2,6 +2,7 @@ package com.licorerajm.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -81,6 +82,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/roles/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/reports/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/backups/**").hasRole("ADMINISTRADOR")
+
+                        // Cancelación de ventas: solo ADMINISTRADOR
+                        .requestMatchers(HttpMethod.PUT, "/api/sales/*/cancel")
+                        .hasRole("ADMINISTRADOR")
 
                         // Cualquier otra operación requiere autenticación
                         .anyRequest().authenticated()

@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -376,8 +377,19 @@ public class SaleService {
     @Transactional
     public SaleResponse cancelSale(Long id, SaleCancelRequest request) {
 
-        Sale sale = saleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("La venta no fue encontrada"));
+        CurrentUserResponse currentUser = currentUserService.getCurrentUser();
+
+        User cancelledBy = userRepository.findById(currentUser.getId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "El usuario actual no fue encontrado"
+                        ));
+
+        Sale sale = saleRepository.findWithLockById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "La venta no fue encontrada"
+                        ));
 
         if (!"COMPLETED".equals(sale.getStatus())) {
             throw new DuplicateResourceException(
@@ -387,15 +399,13 @@ public class SaleService {
 
         CashRegister cashRegister = cashRegisterRepository.findWithLockById(
                         sale.getCashRegister().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("La caja no fue encontrada"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "La caja no fue encontrada"
+                        ));
 
-        if (!"OPEN".equals(cashRegister.getStatus())) {
-            throw new DuplicateResourceException(
-                    "No se puede cancelar la venta porque la caja está cerrada"
-            );
-        }
-
-        List<SaleDetail> details = saleDetailRepository.findBySaleId(sale.getId());
+        List<SaleDetail> details =
+                saleDetailRepository.findBySaleId(sale.getId());
 
         for (SaleDetail detail : details) {
 
@@ -407,10 +417,19 @@ public class SaleService {
                 InventoryLot lot = inventoryLotRepository
                         .findById(lotConsumption.getInventoryLot().getId())
                         .orElseThrow(() ->
-                                new ResourceNotFoundException("El lote de inventario no fue encontrado"));
+                                new ResourceNotFoundException(
+                                        "El lote de inventario no fue encontrado"
+                                ));
+
+                if (lot.getInvalidatedAt() != null) {
+                    throw new DuplicateResourceException(
+                            "No se puede cancelar la venta porque uno de sus lotes de inventario fue invalidado posteriormente"
+                    );
+                }
 
                 lot.setAvailableQuantity(
-                        lot.getAvailableQuantity() + lotConsumption.getQuantity()
+                        lot.getAvailableQuantity()
+                                + lotConsumption.getQuantity()
                 );
 
                 lot.setActive(true);
@@ -421,16 +440,20 @@ public class SaleService {
             Product product = productRepository.findWithLockById(
                             detail.getProduct().getId())
                     .orElseThrow(() ->
-                            new ResourceNotFoundException("El producto no fue encontrado"));
+                            new ResourceNotFoundException(
+                                    "El producto no fue encontrado"
+                            ));
 
             product.setCurrentStock(
-                    product.getCurrentStock() + detail.getQuantity()
+                    product.getCurrentStock()
+                            + detail.getQuantity()
             );
 
             productRepository.save(product);
         }
 
-        List<SalePayment> payments = salePaymentRepository.findBySaleId(sale.getId());
+        List<SalePayment> payments =
+                salePaymentRepository.findBySaleId(sale.getId());
 
         BigDecimal cashToReverse = BigDecimal.ZERO;
         BigDecimal transferToReverse = BigDecimal.ZERO;
@@ -449,28 +472,41 @@ public class SaleService {
             }
         }
 
-        cashRegister.setCashSales(
-                cashRegister.getCashSales().subtract(cashToReverse)
-        );
+        BigDecimal newCashSales =
+                cashRegister.getCashSales()
+                        .subtract(cashToReverse);
 
-        cashRegister.setTransferSales(
-                cashRegister.getTransferSales().subtract(transferToReverse)
-        );
+        BigDecimal newTransferSales =
+                cashRegister.getTransferSales()
+                        .subtract(transferToReverse);
 
-        cashRegister.setTotalSales(
+        BigDecimal newTotalSales =
                 cashRegister.getTotalSales()
                         .subtract(cashToReverse)
-                        .subtract(transferToReverse)
-        );
+                        .subtract(transferToReverse);
 
-        cashRegister.setExpectedCash(
+        BigDecimal newExpectedCash =
                 cashRegister.getOpeningAmount()
-                        .add(cashRegister.getCashSales())
-        );
+                        .add(newCashSales);
+
+        cashRegister.setCashSales(newCashSales);
+        cashRegister.setTransferSales(newTransferSales);
+        cashRegister.setTotalSales(newTotalSales);
+        cashRegister.setExpectedCash(newExpectedCash);
+
+        if (cashRegister.getCountedCash() != null) {
+            BigDecimal newDifference =
+                    cashRegister.getCountedCash()
+                            .subtract(newExpectedCash);
+
+            cashRegister.setDifference(newDifference);
+        }
 
         cashRegisterRepository.save(cashRegister);
 
         sale.setStatus("CANCELLED");
+        sale.setCancelledAt(LocalDateTime.now());
+        sale.setCancelledBy(cancelledBy);
 
         if (request != null) {
             sale.setCancellationReason(request.getReason());
@@ -496,6 +532,12 @@ public class SaleService {
         response.setTotal(sale.getTotal());
         response.setStatus(sale.getStatus());
         response.setCancellationReason(sale.getCancellationReason());
+        response.setCancelledAt(sale.getCancelledAt());
+
+        if (sale.getCancelledBy() != null) {
+            response.setCancelledByUserId(sale.getCancelledBy().getId());
+            response.setCancelledByUsername(sale.getCancelledBy().getUsername());
+        }
 
         var details = saleDetailRepository.findBySaleId(sale.getId()).stream()
                 .map(detail -> {

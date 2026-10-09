@@ -148,20 +148,15 @@ public class ProductService {
         return toResponse(updatedProduct);
     }
 
+
     @Transactional
     public ProductResponse activate(Long id) {
-
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "El producto no fue encontrado"));
 
-        if (product.getDeleted()) {
-            inventoryLotRepository.invalidateByProductId(product.getId());
-            product.setCurrentStock(0);
-            product.setDeleted(false);
-        }
-
+        product.setDeleted(false);
         product.setActive(true);
 
         Product updatedProduct = productRepository.save(product);

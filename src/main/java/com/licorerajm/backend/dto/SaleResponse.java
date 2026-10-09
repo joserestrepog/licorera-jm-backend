@@ -23,6 +23,9 @@ public class SaleResponse {
     private String status;
 
     private String cancellationReason;
+    private LocalDateTime cancelledAt;
+    private Long cancelledByUserId;
+    private String cancelledByUsername;
 
     private List<SaleDetailResponse> items;
     private List<SalePaymentResponse> payments;
@@ -107,6 +110,38 @@ public class SaleResponse {
         this.status = status;
     }
 
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public Long getCancelledByUserId() {
+        return cancelledByUserId;
+    }
+
+    public void setCancelledByUserId(Long cancelledByUserId) {
+        this.cancelledByUserId = cancelledByUserId;
+    }
+
+    public String getCancelledByUsername() {
+        return cancelledByUsername;
+    }
+
+    public void setCancelledByUsername(String cancelledByUsername) {
+        this.cancelledByUsername = cancelledByUsername;
+    }
+
     public List<SaleDetailResponse> getItems() {
         return items;
     }
@@ -122,9 +157,4 @@ public class SaleResponse {
     public void setPayments(List<SalePaymentResponse> payments) {
         this.payments = payments;
     }
-
-    public String getCancellationReason() { return cancellationReason; }
-
-    public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
-
 }

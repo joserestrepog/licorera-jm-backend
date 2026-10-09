@@ -36,6 +36,9 @@ public class InventoryLot {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(name = "invalidated_at")
+    private LocalDateTime invalidatedAt;
+
     public InventoryLot() {
     }
 
@@ -105,4 +108,8 @@ public class InventoryLot {
     public void setActive(Boolean active) {
         this.active = active;
     }
+
+    public LocalDateTime getInvalidatedAt() { return invalidatedAt; }
+
+    public void setInvalidatedAt(LocalDateTime invalidatedAt) { this.invalidatedAt = invalidatedAt; }
 }

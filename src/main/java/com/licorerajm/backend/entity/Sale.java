@@ -42,6 +42,13 @@ public class Sale {
     @Column(name = "cancellation_reason", length = 255)
     private String cancellationReason;
 
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancelled_by")
+    private User cancelledBy;
+
     @PrePersist
     protected void onCreate() {
         if (saleDate == null) {
@@ -133,8 +140,27 @@ public class Sale {
         this.status = status;
     }
 
-    public String getCancellationReason() { return cancellationReason; }
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
 
-    public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
 
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public User getCancelledBy() {
+        return cancelledBy;
+    }
+
+    public void setCancelledBy(User cancelledBy) {
+        this.cancelledBy = cancelledBy;
+    }
 }

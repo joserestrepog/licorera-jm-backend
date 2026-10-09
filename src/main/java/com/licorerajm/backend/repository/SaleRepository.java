@@ -3,7 +3,10 @@ package com.licorerajm.backend.repository;
 import com.licorerajm.backend.entity.Sale;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +14,10 @@ import java.util.List;
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     List<Sale> findAllByOrderBySaleDateDesc();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Sale s WHERE s.id = :id")
+    java.util.Optional<Sale> findWithLockById(@Param("id") Long id);
 
     @Query(value = """
             SELECT
