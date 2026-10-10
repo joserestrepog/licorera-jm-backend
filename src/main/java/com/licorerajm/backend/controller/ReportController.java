@@ -1,7 +1,8 @@
 package com.licorerajm.backend.controller;
-
+import com.licorerajm.backend.dto.CollectionsReportResponse;
 import com.licorerajm.backend.dto.InventoryReportResponse;
 import com.licorerajm.backend.dto.SalesReportResponse;
+import com.licorerajm.backend.repository.CollectionsByDayProjection;
 import com.licorerajm.backend.repository.SalesByDayProjection;
 import com.licorerajm.backend.repository.SalesByProductProjection;
 import com.licorerajm.backend.service.ReportService;
@@ -62,4 +63,22 @@ public class ReportController {
     ) {
         return reportService.getSalesByDay(from, to);
     }
+
+
+    @GetMapping("/collections/summary")
+    public CollectionsReportResponse getCollectionsSummary(
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to) {
+
+        return reportService.getCollectionsSummary(from, to);
+    }
+
+    @GetMapping("/collections/by-day")
+    public List<CollectionsByDayProjection> getCollectionsByDay(
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to) {
+
+        return reportService.getCollectionsByDay(from, to);
+    }
+
 }

@@ -2,6 +2,7 @@ package com.licorerajm.backend.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SaleResponse {
@@ -20,6 +21,10 @@ public class SaleResponse {
     private BigDecimal discount;
     private BigDecimal total;
 
+    private String customerName;
+    private BigDecimal paidAmount;
+    private BigDecimal creditBalance;
+
     private String status;
 
     private String cancellationReason;
@@ -27,6 +32,8 @@ public class SaleResponse {
     private Long cancelledByUserId;
     private String cancelledByUsername;
 
+    private String creditStatus;
+    private List<CreditPaymentResponse> creditPayments = new ArrayList<>();
     private List<SaleDetailResponse> items;
     private List<SalePaymentResponse> payments;
 
@@ -157,4 +164,24 @@ public class SaleResponse {
     public void setPayments(List<SalePaymentResponse> payments) {
         this.payments = payments;
     }
+
+    public String getCustomerName() { return customerName; }
+
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+
+    public BigDecimal getPaidAmount() { return paidAmount; }
+
+    public void setPaidAmount(BigDecimal paidAmount) { this.paidAmount = paidAmount; }
+
+    public BigDecimal getCreditBalance() { return creditBalance; }
+
+    public void setCreditBalance(BigDecimal creditBalance) { this.creditBalance = creditBalance; }
+
+    public String getCreditStatus() { return creditStatus; }
+
+    public void setCreditStatus(String creditStatus) { this.creditStatus = creditStatus; }
+
+    public List<CreditPaymentResponse> getCreditPayments() { return creditPayments; }
+
+    public void setCreditPayments(List<CreditPaymentResponse> creditPayments) { this.creditPayments = creditPayments; }
 }

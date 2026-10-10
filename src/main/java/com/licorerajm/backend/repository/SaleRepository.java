@@ -101,4 +101,160 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+
+    @Query(value = """
+    WITH all_collections AS (
+        SELECT
+            sp.payment_date AS collection_date,
+            UPPER(pm.name) AS method_name,
+            sp.amount AS amount,
+            'SALE' AS collection_type
+        FROM sale_payment sp
+        INNER JOIN sale s ON s.id = sp.sale_id
+        INNER JOIN payment_method pm ON pm.id = sp.payment_method_id
+        WHERE s.status = 'COMPLETED'
+          AND sp.payment_date >= :start
+          AND sp.payment_date < :end
+
+        UNION ALL
+
+        SELECT
+            cp.payment_date AS collection_date,
+            UPPER(pm.name) AS method_name,
+            cp.amount AS amount,
+            'CREDIT' AS collection_type
+        FROM credit_payment cp
+        INNER JOIN credit_account ca ON ca.id = cp.credit_account_id
+        INNER JOIN sale s ON s.id = ca.sale_id
+        INNER JOIN payment_method pm ON pm.id = cp.payment_method_id
+        WHERE s.status = 'COMPLETED'
+          AND ca.status <> 'CANCELLED'
+          AND cp.payment_date >= :start
+          AND cp.payment_date < :end
+    )
+    SELECT
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'SALE' THEN amount ELSE 0
+        END), 0) AS "salePaymentsTotal",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'SALE'
+             AND method_name = 'EFECTIVO' THEN amount ELSE 0
+        END), 0) AS "salePaymentsCash",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'SALE'
+             AND method_name = 'TRANSFERENCIA' THEN amount ELSE 0
+        END), 0) AS "salePaymentsTransfer",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'CREDIT' THEN amount ELSE 0
+        END), 0) AS "creditPaymentsTotal",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'CREDIT'
+             AND method_name = 'EFECTIVO' THEN amount ELSE 0
+        END), 0) AS "creditPaymentsCash",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'CREDIT'
+             AND method_name = 'TRANSFERENCIA' THEN amount ELSE 0
+        END), 0) AS "creditPaymentsTransfer",
+
+        COALESCE(SUM(amount), 0) AS "totalCollected",
+
+        COALESCE(SUM(CASE
+            WHEN method_name = 'EFECTIVO' THEN amount ELSE 0
+        END), 0) AS "cashCollected",
+
+        COALESCE(SUM(CASE
+            WHEN method_name = 'TRANSFERENCIA' THEN amount ELSE 0
+        END), 0) AS "transferCollected"
+    FROM all_collections
+    """, nativeQuery = true)
+    CollectionsSummaryProjection findCollectionsSummary(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    @Query(value = """
+    WITH all_collections AS (
+        SELECT
+            sp.payment_date AS collection_date,
+            UPPER(pm.name) AS method_name,
+            sp.amount AS amount,
+            'SALE' AS collection_type
+        FROM sale_payment sp
+        INNER JOIN sale s ON s.id = sp.sale_id
+        INNER JOIN payment_method pm ON pm.id = sp.payment_method_id
+        WHERE s.status = 'COMPLETED'
+          AND sp.payment_date >= :start
+          AND sp.payment_date < :end
+
+        UNION ALL
+
+        SELECT
+            cp.payment_date AS collection_date,
+            UPPER(pm.name) AS method_name,
+            cp.amount AS amount,
+            'CREDIT' AS collection_type
+        FROM credit_payment cp
+        INNER JOIN credit_account ca ON ca.id = cp.credit_account_id
+        INNER JOIN sale s ON s.id = ca.sale_id
+        INNER JOIN payment_method pm ON pm.id = cp.payment_method_id
+        WHERE s.status = 'COMPLETED'
+          AND ca.status <> 'CANCELLED'
+          AND cp.payment_date >= :start
+          AND cp.payment_date < :end
+    )
+    SELECT
+        CAST(collection_date AS DATE) AS "collectionDate",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'SALE' THEN amount ELSE 0
+        END), 0) AS "salePaymentsTotal",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'SALE'
+             AND method_name = 'EFECTIVO' THEN amount ELSE 0
+        END), 0) AS "salePaymentsCash",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'SALE'
+             AND method_name = 'TRANSFERENCIA' THEN amount ELSE 0
+        END), 0) AS "salePaymentsTransfer",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'CREDIT' THEN amount ELSE 0
+        END), 0) AS "creditPaymentsTotal",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'CREDIT'
+             AND method_name = 'EFECTIVO' THEN amount ELSE 0
+        END), 0) AS "creditPaymentsCash",
+
+        COALESCE(SUM(CASE
+            WHEN collection_type = 'CREDIT'
+             AND method_name = 'TRANSFERENCIA' THEN amount ELSE 0
+        END), 0) AS "creditPaymentsTransfer",
+
+        COALESCE(SUM(amount), 0) AS "totalCollected",
+
+        COALESCE(SUM(CASE
+            WHEN method_name = 'EFECTIVO' THEN amount ELSE 0
+        END), 0) AS "cashCollected",
+
+        COALESCE(SUM(CASE
+            WHEN method_name = 'TRANSFERENCIA' THEN amount ELSE 0
+        END), 0) AS "transferCollected"
+    FROM all_collections
+    GROUP BY CAST(collection_date AS DATE)
+    ORDER BY CAST(collection_date AS DATE)
+    """, nativeQuery = true)
+    List<CollectionsByDayProjection> findCollectionsByDay(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
 }

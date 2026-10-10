@@ -9,6 +9,8 @@ import com.licorerajm.backend.entity.*;
 import com.licorerajm.backend.exception.DuplicateResourceException;
 import com.licorerajm.backend.exception.ResourceNotFoundException;
 import com.licorerajm.backend.repository.CashRegisterRepository;
+import com.licorerajm.backend.repository.CreditAccountRepository;
+import com.licorerajm.backend.repository.CreditPaymentRepository;
 import com.licorerajm.backend.repository.InventoryLotRepository;
 import com.licorerajm.backend.repository.PaymentMethodRepository;
 import com.licorerajm.backend.repository.ProductRepository;
@@ -36,6 +38,8 @@ public class SaleService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final ProductRepository productRepository;
     private final CashRegisterRepository cashRegisterRepository;
+    private final CreditAccountRepository creditAccountRepository;
+    private final CreditPaymentRepository creditPaymentRepository;
     private final UserRepository userRepository;
     private final InventoryLotRepository inventoryLotRepository;
 
@@ -50,6 +54,8 @@ public class SaleService {
             PaymentMethodRepository paymentMethodRepository,
             ProductRepository productRepository,
             CashRegisterRepository cashRegisterRepository,
+            CreditAccountRepository creditAccountRepository,
+            CreditPaymentRepository creditPaymentRepository,
             UserRepository userRepository,
             InventoryLotRepository inventoryLotRepository,
             SaleNumberRepository saleNumberRepository,
@@ -62,6 +68,8 @@ public class SaleService {
         this.paymentMethodRepository = paymentMethodRepository;
         this.productRepository = productRepository;
         this.cashRegisterRepository = cashRegisterRepository;
+        this.creditAccountRepository = creditAccountRepository;
+        this.creditPaymentRepository = creditPaymentRepository;
         this.userRepository = userRepository;
         this.inventoryLotRepository = inventoryLotRepository;
         this.saleNumberRepository = saleNumberRepository;
@@ -204,18 +212,43 @@ public class SaleService {
         savedSale.setDiscount(totalDiscount);
         savedSale.setTotal(total);
 
-        BigDecimal paymentTotal = request.getPayments().stream()
-                .map(payment -> payment.getAmount())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<com.licorerajm.backend.dto.SalePaymentRequest> paymentRequests =
+                request.getPayments() == null
+                        ? List.of()
+                        : request.getPayments();
 
-        if (paymentTotal.compareTo(total) != 0) {
+        BigDecimal paymentTotal = BigDecimal.ZERO;
+
+        for (var paymentRequest : paymentRequests) {
+            if (paymentRequest.getAmount() == null
+                    || paymentRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new DuplicateResourceException(
+                        "El monto de cada pago debe ser mayor que cero"
+                );
+            }
+
+            paymentTotal = paymentTotal.add(paymentRequest.getAmount());
+        }
+
+        if (paymentTotal.compareTo(total) > 0) {
             throw new DuplicateResourceException(
-                    "La suma de los pagos debe ser igual al total de la venta"
+                    "La suma de los pagos no puede superar el total de la venta"
             );
         }
 
-        for (var paymentRequest : request.getPayments()) {
+        boolean hasCredit = paymentTotal.compareTo(total) < 0;
 
+        String customerName = request.getCustomerName() == null
+                ? ""
+                : request.getCustomerName().trim();
+
+        if (hasCredit && customerName.isBlank()) {
+            throw new DuplicateResourceException(
+                    "Debes indicar el nombre del cliente cuando la venta queda a crédito"
+            );
+        }
+
+        for (var paymentRequest : paymentRequests) {
             var paymentMethod = paymentMethodRepository
                     .findById(paymentRequest.getPaymentMethodId())
                     .orElseThrow(() ->
@@ -230,12 +263,21 @@ public class SaleService {
                                 + paymentMethod.getName()
                 );
             }
+
+            String methodName = paymentMethod.getName().trim();
+
+            if (!"EFECTIVO".equalsIgnoreCase(methodName)
+                    && !"TRANSFERENCIA".equalsIgnoreCase(methodName)) {
+                throw new DuplicateResourceException(
+                        "Los pagos solo pueden recibirse en efectivo o transferencia"
+                );
+            }
         }
 
         BigDecimal cashSales = BigDecimal.ZERO;
         BigDecimal transferSales = BigDecimal.ZERO;
 
-        for (var paymentRequest : request.getPayments()) {
+        for (var paymentRequest : paymentRequests) {
 
             var paymentMethod = paymentMethodRepository
                     .findById(paymentRequest.getPaymentMethodId())
@@ -253,19 +295,35 @@ public class SaleService {
 
             salePaymentRepository.save(payment);
 
-            if ("EFECTIVO".equalsIgnoreCase(paymentMethod.getName())) {
+            String methodName = paymentMethod.getName().trim();
+
+            if ("EFECTIVO".equalsIgnoreCase(methodName)) {
                 cashSales = cashSales.add(paymentRequest.getAmount());
             }
 
-            if ("TRANSFERENCIA".equalsIgnoreCase(paymentMethod.getName())) {
+            if ("TRANSFERENCIA".equalsIgnoreCase(methodName)) {
                 transferSales = transferSales.add(paymentRequest.getAmount());
             }
+        }
+
+        if (hasCredit) {
+            BigDecimal creditBalance = total.subtract(paymentTotal);
+
+            CreditAccount creditAccount = new CreditAccount();
+            creditAccount.setSale(savedSale);
+            creditAccount.setCustomerName(customerName);
+            creditAccount.setInitialAmount(creditBalance);
+            creditAccount.setBalance(creditBalance);
+            creditAccount.setStatus("PENDING");
+
+            creditAccountRepository.save(creditAccount);
         }
 
         BigDecimal totalSales = cashSales.add(transferSales);
 
         BigDecimal expectedCash = cashRegister.getOpeningAmount()
                 .add(cashRegister.getCashSales())
+                .add(cashRegister.getCashCollections())
                 .add(cashSales);
 
         cashRegister.setCashSales(
@@ -397,6 +455,32 @@ public class SaleService {
             );
         }
 
+        CreditAccount creditAccount = creditAccountRepository
+                .findBySaleId(sale.getId())
+                .orElse(null);
+
+        if (creditAccount != null) {
+            creditAccount = creditAccountRepository
+                    .findWithLockById(creditAccount.getId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "La cuenta por cobrar no fue encontrada"
+                            )
+                    );
+
+            List<CreditPayment> creditPayments =
+                    creditPaymentRepository
+                            .findByCreditAccountIdOrderByPaymentDateDescIdDesc(
+                                    creditAccount.getId()
+                            );
+
+            if (!creditPayments.isEmpty()) {
+                throw new DuplicateResourceException(
+                        "No se puede cancelar una venta con abonos de crédito registrados"
+                );
+            }
+        }
+
         CashRegister cashRegister = cashRegisterRepository.findWithLockById(
                         sale.getCashRegister().getId())
                 .orElseThrow(() ->
@@ -485,9 +569,9 @@ public class SaleService {
                         .subtract(cashToReverse)
                         .subtract(transferToReverse);
 
-        BigDecimal newExpectedCash =
-                cashRegister.getOpeningAmount()
-                        .add(newCashSales);
+        BigDecimal newExpectedCash = cashRegister.getOpeningAmount()
+                .add(newCashSales)
+                .add(cashRegister.getCashCollections());
 
         cashRegister.setCashSales(newCashSales);
         cashRegister.setTransferSales(newTransferSales);
@@ -512,6 +596,12 @@ public class SaleService {
             sale.setCancellationReason(request.getReason());
         }
 
+        if (creditAccount != null) {
+            creditAccount.setStatus("CANCELLED");
+            creditAccount.setBalance(BigDecimal.ZERO);
+            creditAccountRepository.save(creditAccount);
+        }
+
         Sale cancelledSale = saleRepository.save(sale);
 
         return toResponse(cancelledSale);
@@ -530,6 +620,58 @@ public class SaleService {
         response.setSubtotal(sale.getSubtotal());
         response.setDiscount(sale.getDiscount());
         response.setTotal(sale.getTotal());
+        List<SalePayment> salePayments =
+                salePaymentRepository.findBySaleId(sale.getId());
+
+        BigDecimal paidAmount = salePayments.stream()
+                .map(SalePayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        response.setPaidAmount(paidAmount);
+        response.setCreditBalance(BigDecimal.ZERO);
+        response.setCreditPayments(List.of());
+
+        creditAccountRepository.findBySaleId(sale.getId())
+                .ifPresent(account -> {
+                    response.setCustomerName(account.getCustomerName());
+                    response.setCreditBalance(account.getBalance());
+                    response.setCreditStatus(account.getStatus());
+
+                    var creditPayments = creditPaymentRepository
+                            .findByCreditAccountIdOrderByPaymentDateDescIdDesc(
+                                    account.getId()
+                            )
+                            .stream()
+                            .map(payment -> {
+                                var paymentResponse =
+                                        new com.licorerajm.backend.dto.CreditPaymentResponse();
+
+                                paymentResponse.setId(payment.getId());
+                                paymentResponse.setCreditAccountId(account.getId());
+                                paymentResponse.setCashRegisterId(
+                                        payment.getCashRegister().getId()
+                                );
+                                paymentResponse.setUserId(payment.getUser().getId());
+                                paymentResponse.setUsername(
+                                        payment.getUser().getUsername()
+                                );
+                                paymentResponse.setPaymentMethodId(
+                                        payment.getPaymentMethod().getId()
+                                );
+                                paymentResponse.setPaymentMethodName(
+                                        payment.getPaymentMethod().getName()
+                                );
+                                paymentResponse.setAmount(payment.getAmount());
+                                paymentResponse.setPaymentDate(
+                                        payment.getPaymentDate()
+                                );
+
+                                return paymentResponse;
+                            })
+                            .toList();
+
+                    response.setCreditPayments(creditPayments);
+                });
         response.setStatus(sale.getStatus());
         response.setCancellationReason(sale.getCancellationReason());
         response.setCancelledAt(sale.getCancelledAt());
@@ -562,7 +704,7 @@ public class SaleService {
 
         response.setItems(details);
 
-        var payments = salePaymentRepository.findBySaleId(sale.getId())
+        var payments = salePayments
                 .stream()
                 .map(payment -> {
                     var paymentResponse = new com.licorerajm.backend.dto.SalePaymentResponse();

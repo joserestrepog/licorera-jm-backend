@@ -1,7 +1,10 @@
 package com.licorerajm.backend.service;
 
+import com.licorerajm.backend.dto.CollectionsReportResponse;
 import com.licorerajm.backend.dto.InventoryReportResponse;
 import com.licorerajm.backend.dto.SalesReportResponse;
+import com.licorerajm.backend.repository.CollectionsByDayProjection;
+import com.licorerajm.backend.repository.CollectionsSummaryProjection;
 import com.licorerajm.backend.repository.InventoryStockProjection;
 import com.licorerajm.backend.repository.ProductRepository;
 import com.licorerajm.backend.repository.SaleRepository;
@@ -54,6 +57,45 @@ public class ReportService {
                 costProfit.getProfit()
         );
     }
+
+
+    public CollectionsReportResponse getCollectionsSummary(
+            LocalDate from,
+            LocalDate to) {
+
+        validateDateRange(from, to);
+
+        LocalDateTime start = from.atStartOfDay();
+        LocalDateTime end = to.plusDays(1).atStartOfDay();
+
+        CollectionsSummaryProjection summary =
+                saleRepository.findCollectionsSummary(start, end);
+
+        return new CollectionsReportResponse(
+                summary.getSalePaymentsTotal(),
+                summary.getSalePaymentsCash(),
+                summary.getSalePaymentsTransfer(),
+                summary.getCreditPaymentsTotal(),
+                summary.getCreditPaymentsCash(),
+                summary.getCreditPaymentsTransfer(),
+                summary.getTotalCollected(),
+                summary.getCashCollected(),
+                summary.getTransferCollected()
+        );
+    }
+
+    public List<CollectionsByDayProjection> getCollectionsByDay(
+            LocalDate from,
+            LocalDate to) {
+
+        validateDateRange(from, to);
+
+        LocalDateTime start = from.atStartOfDay();
+        LocalDateTime end = to.plusDays(1).atStartOfDay();
+
+        return saleRepository.findCollectionsByDay(start, end);
+    }
+
 
     public List<SalesByProductProjection> getSalesByProduct(
             LocalDate from,

@@ -66,6 +66,7 @@ public class CashRegisterService {
         cashRegister.setUser(user);
         cashRegister.setOpeningAmount(request.getOpeningAmount());
         cashRegister.setCashSales(BigDecimal.ZERO);
+        cashRegister.setCashCollections(BigDecimal.ZERO);
         cashRegister.setTransferSales(BigDecimal.ZERO);
         cashRegister.setTotalSales(BigDecimal.ZERO);
         cashRegister.setExpectedCash(request.getOpeningAmount());
@@ -87,7 +88,8 @@ public class CashRegisterService {
         }
 
         BigDecimal expectedCash = cashRegister.getOpeningAmount()
-                .add(cashRegister.getCashSales());
+                .add(cashRegister.getCashSales())
+                .add(cashRegister.getCashCollections());
 
         BigDecimal difference = request.getCountedCash()
                 .subtract(expectedCash);
@@ -117,6 +119,7 @@ public class CashRegisterService {
         response.setClosedAt(cashRegister.getClosedAt());
         response.setOpeningAmount(cashRegister.getOpeningAmount());
         response.setCashSales(cashRegister.getCashSales());
+        response.setCashCollections(cashRegister.getCashCollections());
         response.setTransferSales(cashRegister.getTransferSales());
         response.setTotalSales(cashRegister.getTotalSales());
         response.setExpectedCash(cashRegister.getExpectedCash());

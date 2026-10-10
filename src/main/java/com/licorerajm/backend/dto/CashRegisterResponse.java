@@ -12,6 +12,8 @@ public class CashRegisterResponse {
     private LocalDateTime closedAt;
     private BigDecimal openingAmount;
     private BigDecimal cashSales;
+
+    private BigDecimal cashCollections;
     private BigDecimal transferSales;
     private BigDecimal totalSales;
     private BigDecimal expectedCash;
@@ -75,6 +77,10 @@ public class CashRegisterResponse {
     public void setCashSales(BigDecimal cashSales) {
         this.cashSales = cashSales;
     }
+
+    public BigDecimal getCashCollections() { return cashCollections; }
+
+    public void setCashCollections(BigDecimal cashCollections) { this.cashCollections = cashCollections; }
 
     public BigDecimal getTransferSales() {
         return transferSales;

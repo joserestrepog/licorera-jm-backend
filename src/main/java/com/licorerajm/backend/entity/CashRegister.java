@@ -29,6 +29,9 @@ public class CashRegister {
     @Column(name = "cash_sales", nullable = false, precision = 12, scale = 2)
     private BigDecimal cashSales;
 
+    @Column(name = "cash_collections", nullable = false, precision = 12, scale = 2)
+    private BigDecimal cashCollections;
+
     @Column(name = "transfer_sales", nullable = false, precision = 12, scale = 2)
     private BigDecimal transferSales;
 
@@ -62,6 +65,10 @@ public class CashRegister {
 
         if (cashSales == null) {
             cashSales = BigDecimal.ZERO;
+        }
+
+        if (cashCollections == null) {
+            cashCollections = BigDecimal.ZERO;
         }
 
         if (transferSales == null) {
@@ -124,6 +131,10 @@ public class CashRegister {
     public void setCashSales(BigDecimal cashSales) {
         this.cashSales = cashSales;
     }
+
+    public BigDecimal getCashCollections() { return cashCollections; }
+
+    public void setCashCollections(BigDecimal cashCollections) { this.cashCollections = cashCollections; }
 
     public BigDecimal getTransferSales() {
         return transferSales;

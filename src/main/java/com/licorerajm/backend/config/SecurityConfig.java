@@ -87,6 +87,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/sales/*/cancel")
                         .hasRole("ADMINISTRADOR")
 
+                        .requestMatchers("/api/credits/**")
+                        .hasAnyRole("ADMINISTRADOR", "EMPLEADO")
+
                         // Cualquier otra operación requiere autenticación
                         .anyRequest().authenticated()
                 )
