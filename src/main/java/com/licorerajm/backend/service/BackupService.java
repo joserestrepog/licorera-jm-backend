@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,7 +25,11 @@ public class BackupService {
     @Value("${spring.datasource.password}")
     private String databasePassword;
 
-    private static final String DATABASE_NAME = "licorera_jm";
+    @Value("${spring.datasource.url}")
+    private String databaseUrl;
+
+    @Value("${app.backup.pg-dump-path:pg_dump}")
+    private String pgDumpPath;
 
     @Value("${app.backup.directory}")
     private String backupDirectory;
@@ -37,7 +43,6 @@ public class BackupService {
     public Path createBackup() throws IOException, InterruptedException {
 
         Path backupDirectoryPath = Paths.get(backupDirectory);
-
         Files.createDirectories(backupDirectoryPath);
 
         String fileName = "licorera_jm_"
@@ -46,12 +51,35 @@ public class BackupService {
 
         Path backupFile = backupDirectoryPath.resolve(fileName);
 
+        URI databaseUri = URI.create(
+                databaseUrl.substring("jdbc:".length())
+        );
+
+        String databaseHost = databaseUri.getHost();
+        int databasePort = databaseUri.getPort() == -1
+                ? 5432
+                : databaseUri.getPort();
+
+        String databasePath = databaseUri.getPath();
+
+        if (databaseHost == null
+                || databasePath == null
+                || databasePath.length() < 2) {
+            throw new IllegalStateException(
+                    "La URL JDBC no contiene un host o una base de datos válidos"
+            );
+        }
+
+        String databaseName = databasePath.substring(1);
+
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "pg_dump",
+                pgDumpPath,
+                "-h", databaseHost,
+                "-p", String.valueOf(databasePort),
                 "-U", databaseUsername,
                 "-F", "c",
                 "-f", backupFile.toAbsolutePath().toString(),
-                DATABASE_NAME
+                databaseName
         );
 
         processBuilder.environment().put(
@@ -63,13 +91,26 @@ public class BackupService {
 
         Process process = processBuilder.start();
 
+        List<String> output;
+
+        try (var reader = process.inputReader(StandardCharsets.UTF_8)) {
+            output = reader.lines().toList();
+        }
+
         int exitCode = process.waitFor();
 
         if (exitCode != 0) {
             Files.deleteIfExists(backupFile);
 
+            String details = String.join(
+                    System.lineSeparator(),
+                    output
+            );
+
             throw new IllegalStateException(
-                    "No fue posible crear el backup de la base de datos"
+                    "No fue posible crear el backup de la base de datos. "
+                            + "Código de salida: " + exitCode
+                            + (details.isBlank() ? "" : ". Detalle: " + details)
             );
         }
 

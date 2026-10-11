@@ -23,6 +23,18 @@ class BackupServiceTest {
 
         ReflectionTestUtils.setField(
                 backupService,
+                "databaseUrl",
+                "jdbc:postgresql://localhost:5432/licorera_jm"
+        );
+
+        ReflectionTestUtils.setField(
+                backupService,
+                "pgDumpPath",
+                "pg_dump"
+        );
+
+        ReflectionTestUtils.setField(
+                backupService,
                 "databaseUsername",
                 "postgres"
         );
